@@ -6,7 +6,8 @@ services:
     container_name: octoprint
     ports:
       - 5000:5000
-    # devices:
+    devices:
+     - /dev/video:/dev/video
     #  - /dev/ttyACM0:/dev/ttyACM0
     volumes:
      - ./config:/home/octoprint/.octoprint
