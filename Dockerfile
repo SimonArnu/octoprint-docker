@@ -1,12 +1,14 @@
 
-FROM python:2.7
+FROM python:3.7-alpine
 EXPOSE 5000
-LABEL maintainer "gaetancollaud@gmail.com"
 
 ENV CURA_VERSION=15.04.6
 ARG tag=master
 
 WORKDIR /opt/octoprint
+
+RUN apk update
+RUN apk add --virtual build-dependencies build-base gcc git
 
 # In case of alpine
 #RUN apk update && apk upgrade \
@@ -22,28 +24,31 @@ RUN cd /tmp \
   && rm -Rf /tmp/*
 
 #install Cura
-RUN cd /tmp \
-  && wget https://github.com/Ultimaker/CuraEngine/archive/${CURA_VERSION}.tar.gz \
-  && tar -zxf ${CURA_VERSION}.tar.gz \
-	&& cd CuraEngine-${CURA_VERSION} \
-	&& mkdir build \
-	&& make \
-	&& mv -f ./build /opt/cura/ \
-  && rm -Rf /tmp/*
+# RUN cd /tmp \
+#   && wget https://github.com/Ultimaker/CuraEngine/archive/${CURA_VERSION}.tar.gz \
+#   && tar -zxf ${CURA_VERSION}.tar.gz \
+# 	&& cd CuraEngine-${CURA_VERSION} \
+# 	&& mkdir build \
+# 	&& make \
+# 	&& mv -f ./build /opt/cura/ \
+#   && rm -Rf /tmp/*
 
 #Create an octoprint user
-RUN useradd -ms /bin/bash octoprint && adduser octoprint dialout
+RUN adduser --shell /bin/bash --disabled-password octoprint && adduser octoprint dialout
 RUN chown octoprint:octoprint /opt/octoprint
+RUN pip install virtualenv 
 USER octoprint
 #This fixes issues with the volume command setting wrong permissions
 RUN mkdir /home/octoprint/.octoprint
 
+
 #Install Octoprint
-RUN git clone --branch $tag https://github.com/foosel/OctoPrint.git /opt/octoprint \
-  && virtualenv venv \
+RUN git clone --branch $tag https://github.com/foosel/OctoPrint.git /opt/octoprint 
+RUN virtualenv venv \
 	&& ./venv/bin/python setup.py install
 
 VOLUME /home/octoprint/.octoprint
 
+RUN apk del build-dependencies
 
 CMD ["/opt/octoprint/venv/bin/octoprint", "serve"]
